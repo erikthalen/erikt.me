@@ -1,6 +1,6 @@
 const html = String.raw
 
-export default content => html`<!DOCTYPE html>
+export default (content, refresher) => html`<!DOCTYPE html>
   <html lang="en">
     <head>
       <meta charset="UTF-8" />
@@ -10,6 +10,23 @@ export default content => html`<!DOCTYPE html>
 
       <link href="main.css" rel="stylesheet" />
       <script src="app.js" type="module"></script>
+
+      ${refresher
+        ? html`<script>
+            const eventSource = new EventSource('http://localhost:3000/refresh')
+            eventSource.onmessage = e => {
+              setTimeout(
+                () => window.location.reload(),
+                e.data === 'true' ? 1000 : 0
+              )
+            }
+
+            console.log(
+              '%c REFRESHER ACTIVE ',
+              'color: green; background: lightgreen; border-radius: 2px'
+            )
+          </script>`
+        : ''}
     </head>
 
     <body>

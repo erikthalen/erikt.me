@@ -1,7 +1,7 @@
 {
   "type": "module",
   "scripts": {
-    "dev": "node --watch app.ts",
+    "dev": "NODE_ENV=dev node --watch app.ts",
     "build": "node build.ts"
   },
   "dependencies": {

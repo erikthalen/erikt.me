@@ -3,6 +3,7 @@ import fsp from 'node:fs/promises'
 import path from 'node:path'
 import { marked } from 'marked'
 import layout from './layout.ts'
+import { refreshHandler } from './refresh.ts'
 
 const mimeType = {
   '.html': 'text/html',
@@ -18,6 +19,10 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
 
   if (!url) return res.end()
 
+  if (url === '/refresh') {
+    return refreshHandler(req, res)
+  }
+
   if (ext) {
     const contentType = mimeType[ext]
 
@@ -27,15 +32,24 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
       .setHeader('Content-Type', mimeType[ext])
       .end(await fsp.readFile(path.join('public', url)))
   } else {
-    if (url === '/') {
-      const buffer = await fsp.readFile(path.join('pages', `${'index'}.md`), {
+    try {
+      const filename = url === '/' ? 'index' : url
+
+      const buffer = await fsp.readFile(path.join('pages', `${filename}.md`), {
         encoding: 'utf-8',
       })
-      const content = buffer.toString()
-      const html = marked.parse(content)
-      const page = layout(html)
 
-      return res.setHeader('Content-Type', 'text/html').end(page, 'utf-8')
+      return res
+        .setHeader('Content-Type', 'text/html')
+        .end(
+          layout(
+            marked.parse(buffer.toString()),
+            process.env.NODE_ENV === 'dev'
+          ),
+          'utf-8'
+        )
+    } catch (error) {
+      return res.end('404')
     }
   }
 }
