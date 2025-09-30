@@ -1,3 +1,15 @@
+@font-face {
+  font-family: 't';
+  font-weight: normal;
+  src: url('370.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 't';
+  font-weight: bold;
+  src: url('377.ttf') format('truetype');
+}
+
 :root {
   --color: rgba(255, 255, 255, 0.87);
   --background-color: #242424;
@@ -5,9 +17,9 @@
   color: var(--color);
   background-color: var(--background-color);
 
-  font-family: monospace;
-  font-size: 13px;
-  line-height: 1.2;
+  font-family: 't', monospace;
+  font-size: 15px;
+  line-height: 1.25;
   font-weight: 400;
 
   color-scheme: light dark;
