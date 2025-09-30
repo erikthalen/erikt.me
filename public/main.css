@@ -1,0 +1,58 @@
+:root {
+  --color: rgba(255, 255, 255, 0.87);
+  --background-color: #242424;
+
+  color: var(--color);
+  background-color: var(--background-color);
+
+  font-family: monospace;
+  font-size: 13px;
+  line-height: 1.2;
+  font-weight: 400;
+
+  color-scheme: light dark;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --color: #213547;
+    --background-color: #ffffff;
+  }
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-size: 1rem;
+  font-weight: 400;
+}
+
+main {
+  padding: 1lh 2ch;
+  max-width: 40ch;
+}
+
+p {
+  margin-block: 1lh;
+}
+
+ul {
+  list-style: none;
+}
+
+a {
+  color: inherit;
+  font-weight: bold;
+  text-decoration: none;
+}
+
+::selection {
+  color: var(--background-color);
+  background: var(--color);
+}

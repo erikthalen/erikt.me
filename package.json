@@ -1,0 +1,11 @@
+{
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch app.ts",
+    "build": "node build.ts"
+  },
+  "dependencies": {
+    "@types/node": "^24.6.0",
+    "marked": "^16.3.0"
+  }
+}
