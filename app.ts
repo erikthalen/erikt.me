@@ -11,6 +11,7 @@ const mimeType = {
   '.css': 'text/css',
   '.png': 'image/png',
   '.ttf': 'application/x-font-ttf',
+  '.woff2': 'font/woff2',
 }
 
 async function handler(req: IncomingMessage, res: ServerResponse) {
@@ -24,13 +25,18 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
   }
 
   if (ext) {
-    const contentType = mimeType[ext]
+    try {
+      const contentType = mimeType[ext]
 
-    if (!contentType) return res.end()
+      if (!contentType) return res.end()
 
-    return res
-      .setHeader('Content-Type', mimeType[ext])
-      .end(await fsp.readFile(path.join('public', url)))
+      return res
+        .setHeader('Content-Type', mimeType[ext])
+        .end(await fsp.readFile(path.join('public', url)))
+    } catch (error) {
+      res.statusCode = 404
+      res.end()
+    }
   } else {
     try {
       const filename = url === '/' ? 'index' : url
@@ -41,19 +47,14 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
 
       return res
         .setHeader('Content-Type', 'text/html')
-        .end(
-          layout(
-            marked.parse(buffer.toString()),
-            process.env.NODE_ENV === 'dev'
-          ),
-          'utf-8'
-        )
+        .end(layout(marked.parse(buffer.toString()), process.env.NODE_ENV === 'dev'), 'utf-8')
     } catch (error) {
       return res.end('404')
     }
   }
 }
 
+// console.log('hehe!!')
 const server = http.createServer(handler)
 
 server.listen(3000, () => console.log('http://localhost:3000'))

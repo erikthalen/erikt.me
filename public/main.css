@@ -1,13 +1,13 @@
 @font-face {
   font-family: 't';
   font-weight: normal;
-  src: url('370.ttf') format('truetype');
+  src: url('373.woff2') format('woff2');
 }
 
 @font-face {
   font-family: 't';
   font-weight: bold;
-  src: url('377.ttf') format('truetype');
+  src: url('375.woff2') format('woff2');
 }
 
 :root {
@@ -42,16 +42,30 @@
   padding: 0;
   box-sizing: border-box;
   font-size: 1rem;
-  font-weight: 400;
 }
 
 main {
   padding: 1lh 2ch;
   max-width: 40ch;
+  color: transparent;
+  position: relative;
+  z-index: 1;
+}
+
+output {
+  position: fixed;
+  top: 0;
+  left: 0;
+  white-space: pre;
+  pointer-events: none;
 }
 
 p {
   margin-block: 1lh;
+}
+
+b {
+  color: dodgerblue;
 }
 
 ul {

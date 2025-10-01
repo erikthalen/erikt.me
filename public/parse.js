@@ -1,4 +1,9 @@
-export const parse = dom => {
+/**
+ *
+ * @param {HTMLElement} dom
+ * @returns string[][]
+ */
+export const parse = (dom) => {
   const els = [...dom.childNodes]
 
   let data = []
@@ -26,14 +31,10 @@ export const parse = dom => {
 
       currentLine.push(' ')
 
-      const MAX_LENGTH = 40
+      const MAX_LENGTH = 37
       const nextWord = words[j + 1]
 
-      if (
-        isUL ||
-        !nextWord ||
-        currentLine.length + (nextWord.length + 1) > MAX_LENGTH
-      ) {
+      if (isUL || !nextWord || currentLine.length + nextWord.length > MAX_LENGTH) {
         // next word can't fit in line, need line break
         data.push(currentLine.slice(0, currentLine.length - 1))
         currentLine = []
