@@ -12,7 +12,7 @@ for (const page of pages) {
   try {
     const content = await getContent(page)
     const html = marked.parse(content)
-    const result = layout(html)
+    const result = layout(html, false)
     const { name } = path.parse(page)
 
     await fsp.writeFile(path.join('dist', `${name}.html`), result)
@@ -31,3 +31,5 @@ async function getContent(filename: string) {
 
   return buffer.toString()
 }
+
+process.exit(0)
