@@ -48,16 +48,11 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
 
       // @ts-ignore
       const content = fm(buffer.toString())
-      const html = await marked.parse(content.body)
-
-      console.log(content.attributes)
-
-      const metatags = seo(content.attributes)
 
       return res.setHeader('Content-Type', 'text/html').end(
         layout({
-          metatags,
-          content: html,
+          metatags: seo(content.attributes),
+          content: await marked.parse(content.body),
           devMode: process.env.NODE_ENV === 'dev',
         }),
         'utf-8'

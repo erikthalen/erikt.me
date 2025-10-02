@@ -1,6 +1,6 @@
 ---
 title: erik thalén
-description: Frontend developer.
+description: frontend developer.
 image: favicon.png
 
 logo: favicon.png

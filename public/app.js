@@ -1,15 +1,16 @@
 import { createNoise3D } from 'simplex-noise'
 import { parse } from './parse.js'
 
-const noise3D = createNoise3D()
+const noise3D = createNoise3D(() => 12)
 
 const container = document.querySelector('main')
 const content = container.innerHTML
 const { body } = new DOMParser().parseFromString(content, 'text/html')
 
-const CHARS = ".,-—–*:;'()/\\01abcdeéfghijklmnopqrstuvwxyz&ABCDEFGHIJKLMNOPQRSTUVWXYZ23456789!?| "
-  .split('')
-  .reverse()
+const CHARS =
+  ".,-—–*:;'()/\\abcdeéfghijklmnopqrstuvwxyz&ABCDEFGHIJKLMNOPQRSTUVWXYZ23456789!?|10\\/)(';:*–—-,. "
+    .split('')
+    .reverse()
 const CHAR_SIZE = { X: 9, Y: 18.75 }
 const ASPECT = CHAR_SIZE.X / CHAR_SIZE.Y
 
@@ -50,18 +51,15 @@ const rows = (fill) =>
 
 let grid = rows((y) =>
   cols((x) => {
-    const init = Math.floor(Math.max(0, noise3D(y / 10 / ASPECT, x / 10, 0)) * CHARS.length)
-
-    console.log(init * -1000)
-
-    return init * -1
+    const init = Math.floor(Math.max(0, noise3D(y / 50 / ASPECT, x / 50, 1)) * CHARS.length)
+    return init * -1 - 10
   })
 )
 
 let gridHTML = rows((y) =>
   cols((x) => {
-    const init = Math.floor(Math.max(0, noise3D(y / 10 / ASPECT, x / 10, 0)) * CHARS.length)
-    return CHARS[init * -1000]
+    const init = Math.floor(Math.max(0, noise3D(y / 50 / ASPECT, x / 50, 1)) * CHARS.length)
+    return CHARS[init * -1 - 10]
   })
 )
 
