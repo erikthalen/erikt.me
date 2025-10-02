@@ -3,9 +3,14 @@ import { refreshClient } from './refresh.ts'
 const html = String.raw
 
 export default ({
+  metatags,
   content,
   devMode = false,
 }: {
+  metatags: {
+    head: string
+    body: string
+  }
   content: string
   devMode?: boolean
 }) => html`<!DOCTYPE html>
@@ -13,8 +18,10 @@ export default ({
     <head>
       <meta charset="UTF-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-      <title>erik thalén</title>
+
       <link rel="icon" type="image/png" href="favicon.png" />
+
+      ${metatags.head}
 
       <script type="importmap">
         {
@@ -31,6 +38,8 @@ export default ({
     </head>
 
     <body>
+      ${metatags.body}
+
       <main>${content}</main>
     </body>
   </html>`

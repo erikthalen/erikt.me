@@ -44,12 +44,19 @@
   font-size: 1rem;
 }
 
+body {
+  touch-action: none;
+  min-height: 100dvh;
+}
+
 main {
-  padding: 1lh 2ch;
-  max-width: 40ch;
-  color: transparent;
   position: relative;
   z-index: 1;
+
+  padding: 1lh 2ch;
+  max-width: 40ch;
+
+  color: transparent;
 }
 
 output {
@@ -68,14 +75,8 @@ b {
   color: dodgerblue;
 }
 
-ul {
-  list-style: none;
-}
-
 a {
   color: inherit;
-  font-weight: bold;
-  text-decoration: none;
 }
 
 ::selection {

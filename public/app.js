@@ -48,7 +48,7 @@ const rows = (fill) =>
     .fill(0)
     .map((_, y) => fill(y))
 
-const grid = rows((y) =>
+let grid = rows((y) =>
   cols((x) => {
     const init = Math.floor(Math.max(0, noise3D(y / 10 / ASPECT, x / 10, 0)) * CHARS.length)
 
@@ -57,12 +57,28 @@ const grid = rows((y) =>
     return init * -1
   })
 )
-const gridHTML = rows((y) =>
+
+let gridHTML = rows((y) =>
   cols((x) => {
     const init = Math.floor(Math.max(0, noise3D(y / 10 / ASPECT, x / 10, 0)) * CHARS.length)
     return CHARS[init * -1000]
   })
 )
+
+function resizeGrid() {
+  const newGrid = rows(() => cols(() => 0))
+  const newGridHTML = rows(() => cols(() => ' '))
+
+  for (const [i, row] of newGrid.entries()) {
+    for (let [j, col] of row.entries()) {
+      row[j] = grid[i]?.[j] || row[j]
+      newGridHTML[i][j] = gridHTML[i]?.[j] || newGridHTML[i][j]
+    }
+  }
+
+  grid = newGrid
+  gridHTML = newGridHTML
+}
 
 const outputEl = document.createElement('output')
 document.body.append(outputEl)
@@ -134,15 +150,12 @@ window.addEventListener('pointermove', (e) => {
   mouse.setPosition(e.clientX, e.clientY)
 })
 
-document.documentElement.addEventListener('mouseleave', () => {
-  mouse.reset()
-})
+document.documentElement.addEventListener('mouseleave', mouse.reset)
+window.addEventListener('resize', resizeGrid)
 
+const lerp = (start, end, amt = 0.2) => (1 - amt) * start + amt * end
 const mod = (n, by) => ((n % by) + by) % by
-const isOdd = (x, y) => {
-  const oddY = y % 2 === 0
-  return x % 2 === (oddY ? 0 : 1)
-}
+const isOdd = (x, y) => x % 2 === (y % 2 === 0 ? 0 : 1)
 
 let frame = 0
 
@@ -179,10 +192,6 @@ const update = () => {
         res = current === 0 ? 0 : mod(current + 1, CHARS.length)
       }
 
-      // if (row === 10 && col === 95) {
-      //   console.log(res)
-      // }
-
       grid[row][col] = res
       gridHTML[row][col] = b0(row, col) + CHARS[Math.max(0, res)] + b1(row, col)
     }
@@ -191,10 +200,6 @@ const update = () => {
   }
 
   outputEl.innerHTML = output
-}
-
-function lerp(start, end, amt = 0.2) {
-  return (1 - amt) * start + amt * end
 }
 
 const tick = () => {
@@ -206,5 +211,3 @@ const tick = () => {
 }
 
 tick()
-
-// console.log(output, contentData)

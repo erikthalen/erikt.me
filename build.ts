@@ -2,6 +2,8 @@ import fsp from 'node:fs/promises'
 import path from 'node:path'
 import { marked } from 'marked'
 import layout from './layout.ts'
+import fm from 'front-matter'
+import seo from './seo.ts'
 
 // clear out old built files
 await fsp.rm('dist', { recursive: true }).catch(() => {})
@@ -16,8 +18,16 @@ const pages = await fsp.readdir('pages')
 for (const page of pages) {
   try {
     const buffer = await fsp.readFile(path.join('pages', page), { encoding: 'utf-8' })
-    const html = await marked.parse(buffer.toString())
-    const output = layout({ content: html, devMode: false })
+
+    // @ts-ignore
+    const content = fm(buffer.toString())
+
+    const output = layout({
+      metatags: seo(content.attributes),
+      content: await marked.parse(content.body),
+      devMode: false,
+    })
+
     const { name } = path.parse(page)
 
     await fsp.writeFile(path.join('dist', `${name}.html`), output)

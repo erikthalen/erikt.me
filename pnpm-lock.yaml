@@ -11,19 +11,47 @@ importers:
       '@types/node':
         specifier: ^24.6.0
         version: 24.6.0
+      front-matter:
+        specifier: ^4.0.2
+        version: 4.0.2
       marked:
         specifier: ^16.3.0
         version: 16.3.0
+      metatags-generator:
+        specifier: ^1.1.8
+        version: 1.1.8
 
 packages:
 
   '@types/node@24.6.0':
     resolution: {integrity: sha512-F1CBxgqwOMc4GKJ7eY22hWhBVQuMYTtqI8L0FcszYcpYX0fzfDGpez22Xau8Mgm7O9fI+zA/TYIdq3tGWfweBA==}
 
+  argparse@1.0.10:
+    resolution: {integrity: sha512-o5Roy6tNG4SL/FOkCAN6RzjiakZS25RLYFrcMttJqbdd8BWrnA+fGz57iN5Pb06pvBGvl5gQ0B48dJlslXvoTg==}
+
+  esprima@4.0.1:
+    resolution: {integrity: sha512-eGuFFw7Upda+g4p+QHvnW0RyTX/SVeJBDM/gCtMARO0cLuT2HcEKnTPvhjV6aGeqrCB/sbNop0Kszm0jsaWU4A==}
+    engines: {node: '>=4'}
+    hasBin: true
+
+  front-matter@4.0.2:
+    resolution: {integrity: sha512-I8ZuJ/qG92NWX8i5x1Y8qyj3vizhXS31OxjKDu3LKP+7/qBgfIKValiZIEwoVoJKUHlhWtYrktkxV1XsX+pPlg==}
+
+  js-yaml@3.14.1:
+    resolution: {integrity: sha512-okMH7OXXJ7YrN9Ok3/SXrnu4iX9yOk+25nqX4imS2npuvTYDmo/QEZoqwZkYaIDk3jVvBOTOIEgEhaLOynBS9g==}
+    hasBin: true
+
   marked@16.3.0:
     resolution: {integrity: sha512-K3UxuKu6l6bmA5FUwYho8CfJBlsUWAooKtdGgMcERSpF7gcBUrCGsLH7wDaaNOzwq18JzSUDyoEb/YsrqMac3w==}
     engines: {node: '>= 20'}
     hasBin: true
+
+  metatags-generator@1.1.8:
+    resolution: {integrity: sha512-RMdFmVMug426FCZAC6AbGbRw2fLGBaNftpFSEy45u0Dvny66cKUlwC83RYNNNhnyQfd5SBz8rXWGTGYTyAhvIA==}
+    engines: {node: '>=10.0.0'}
+
+  sprintf-js@1.0.3:
+    resolution: {integrity: sha512-D9cPgkvLlV3t3IzL0D0YLvGA9Ahk4PcvVwUbN0dSGr1aP0Nrt4AEnTUbuGvquEC0mA64Gqt1fzirlRs5ibXx8g==}
 
   undici-types@7.13.0:
     resolution: {integrity: sha512-Ov2Rr9Sx+fRgagJ5AX0qvItZG/JKKoBRAVITs1zk7IqZGTJUwgUr7qoYBpWwakpWilTZFM98rG/AFRocu10iIQ==}
@@ -34,6 +62,25 @@ snapshots:
     dependencies:
       undici-types: 7.13.0
 
+  argparse@1.0.10:
+    dependencies:
+      sprintf-js: 1.0.3
+
+  esprima@4.0.1: {}
+
+  front-matter@4.0.2:
+    dependencies:
+      js-yaml: 3.14.1
+
+  js-yaml@3.14.1:
+    dependencies:
+      argparse: 1.0.10
+      esprima: 4.0.1
+
   marked@16.3.0: {}
+
+  metatags-generator@1.1.8: {}
+
+  sprintf-js@1.0.3: {}
 
   undici-types@7.13.0: {}

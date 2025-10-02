@@ -4,6 +4,8 @@ import path from 'node:path'
 import { marked } from 'marked'
 import layout from './layout.ts'
 import { refreshHandler } from './refresh.ts'
+import fm from 'front-matter'
+import seo from './seo.ts'
 
 const mimeType = {
   '.html': 'text/html',
@@ -44,14 +46,24 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
         encoding: 'utf-8',
       })
 
+      // @ts-ignore
+      const content = fm(buffer.toString())
+      const html = await marked.parse(content.body)
+
+      console.log(content.attributes)
+
+      const metatags = seo(content.attributes)
+
       return res.setHeader('Content-Type', 'text/html').end(
         layout({
-          content: await marked.parse(buffer.toString()),
+          metatags,
+          content: html,
           devMode: process.env.NODE_ENV === 'dev',
         }),
         'utf-8'
       )
     } catch (error) {
+      console.log(error)
       return res.end('404')
     }
   }
