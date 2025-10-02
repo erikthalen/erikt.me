@@ -1,7 +1,8 @@
-import { createNoise3D } from 'simplex-noise'
+import { createNoise3D, createNoise2D } from 'simplex-noise'
 import { parse } from './parse.js'
+import mouse from './mouse.js'
 
-const noise3D = createNoise3D(() => 12)
+const noise3D = createNoise3D()
 
 const container = document.querySelector('main')
 const content = container.innerHTML
@@ -11,6 +12,7 @@ const CHARS =
   ".,-—–*:;'()/\\abcdeéfghijklmnopqrstuvwxyz&ABCDEFGHIJKLMNOPQRSTUVWXYZ23456789!?|10\\/)(';:*–—-,. "
     .split('')
     .reverse()
+
 const CHAR_SIZE = { X: 9, Y: 18.75 }
 const ASPECT = CHAR_SIZE.X / CHAR_SIZE.Y
 
@@ -49,17 +51,22 @@ const rows = (fill) =>
     .fill(0)
     .map((_, y) => fill(y))
 
+const initSize = 4
+const initNoise2D = createNoise2D()
+
 let grid = rows((y) =>
   cols((x) => {
-    const init = Math.floor(Math.max(0, noise3D(y / 50 / ASPECT, x / 50, 1)) * CHARS.length)
-    return init * -1 - 10
+    const value = (initNoise2D(y / initSize / ASPECT, x / initSize) + 1) * 0.5
+    const init = Math.floor(value * CHARS.length)
+    return init * -1
   })
 )
 
 let gridHTML = rows((y) =>
   cols((x) => {
-    const init = Math.floor(Math.max(0, noise3D(y / 50 / ASPECT, x / 50, 1)) * CHARS.length)
-    return CHARS[init * -1 - 10]
+    const value = (initNoise2D(y / initSize / ASPECT, x / initSize) + 1) * 0.5
+    const init = Math.floor(value * CHARS.length)
+    return CHARS[init * -1]
   })
 )
 
@@ -68,7 +75,7 @@ function resizeGrid() {
   const newGridHTML = rows(() => cols(() => ' '))
 
   for (const [i, row] of newGrid.entries()) {
-    for (let [j, col] of row.entries()) {
+    for (let [j] of row.entries()) {
       row[j] = grid[i]?.[j] || row[j]
       newGridHTML[i][j] = gridHTML[i]?.[j] || newGridHTML[i][j]
     }
@@ -81,14 +88,15 @@ function resizeGrid() {
 const outputEl = document.createElement('output')
 document.body.append(outputEl)
 
-const pres = [
+const linkStarts = [
   [3, 13],
   [4, 8],
   [20, 2],
   [22, 2],
   [23, 2],
 ]
-const posts = [
+
+const linkEnds = [
   [3, 24],
   [4, 22],
   [20, 7],
@@ -101,48 +109,14 @@ const posts = [
  * @param {number} x
  * @returns ("" | "\<b\>")
  */
-const b0 = (y, x) => (pres.find((i) => i[0] === y && i[1] === x) ? '<b>' : '')
+const b0 = (y, x) => (linkStarts.find((i) => i[0] === y && i[1] === x) ? '<b>' : '')
 
 /**
  * @param {number} y
  * @param {number} x
  * @returns ("" | "\</b\>")
  */
-const b1 = (y, x) => (posts.find((i) => i[0] === y && i[1] === x) ? '</b>' : '')
-
-const initMouse = () => ({
-  current: { x: undefined, y: undefined },
-  last: { x: undefined, y: undefined },
-  grid: { x: undefined, y: undefined },
-  size: 0,
-  sizeLerped: 0,
-  setPosition(x, y) {
-    this.current.x = x
-    this.current.y = y
-    this.grid.x = Math.floor(x / CHAR_SIZE.X)
-    this.grid.y = Math.floor(y / CHAR_SIZE.Y)
-  },
-  updateSize() {
-    if (!this.last.x) {
-      this.size = 0
-    } else {
-      this.size = Math.hypot(this.current.x - this.last.x, this.current.y - this.last.y) ** 0.9
-      this.sizeLerped = lerp(this.sizeLerped || 0, this.size, 0.1)
-    }
-
-    this.last.x = this.current.x
-    this.last.y = this.current.y
-  },
-  reset() {
-    this.current = { x: undefined, y: undefined }
-    this.last = { x: undefined, y: undefined }
-    this.grid = { x: undefined, y: undefined }
-    this.size = 0
-    this.sizeLerped = 0
-  },
-})
-
-let mouse = initMouse()
+const b1 = (y, x) => (linkEnds.find((i) => i[0] === y && i[1] === x) ? '</b>' : '')
 
 window.addEventListener('pointermove', (e) => {
   mouse.setPosition(e.clientX, e.clientY)
@@ -151,11 +125,21 @@ window.addEventListener('pointermove', (e) => {
 document.documentElement.addEventListener('mouseleave', mouse.reset)
 window.addEventListener('resize', resizeGrid)
 
-const lerp = (start, end, amt = 0.2) => (1 - amt) * start + amt * end
 const mod = (n, by) => ((n % by) + by) % by
 const isOdd = (x, y) => x % 2 === (y % 2 === 0 ? 0 : 1)
 
 let frame = 0
+
+export const isInsideTriangle = (s, a, b, c) => {
+  let as_x = s[0] - a[0]
+  let as_y = s[1] - a[1]
+
+  let s_ab = (b[0] - a[0]) * as_y - (b[1] - a[1]) * as_x > 0
+
+  if ((c[0] - a[0]) * as_y - (c[1] - a[1]) * as_x > 0 == s_ab) return false
+  if ((c[0] - b[0]) * (s[1] - b[1]) - (c[1] - b[1]) * (s[0] - b[0]) > 0 != s_ab) return false
+  return true
+}
 
 const update = () => {
   frame++

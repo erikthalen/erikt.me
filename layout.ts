@@ -33,6 +33,7 @@ export default ({
 
       <link href="main.css" rel="stylesheet" />
       <script src="app.js" type="module"></script>
+      <!-- <script src="generate-image.js" type="module"></script> -->
 
       ${devMode ? refreshClient : ''}
     </head>
