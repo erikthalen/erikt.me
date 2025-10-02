@@ -8,30 +8,29 @@ import { refreshHandler } from './refresh.ts'
 const mimeType = {
   '.html': 'text/html',
   '.js': 'text/javascript',
-  '.css': 'text/css',
   '.png': 'image/png',
-  '.ttf': 'application/x-font-ttf',
+  '.css': 'text/css',
   '.woff2': 'font/woff2',
 }
 
 async function handler(req: IncomingMessage, res: ServerResponse) {
   const url = req.url
-  const { ext } = path.parse(url || '')
 
   if (!url) return res.end()
 
-  if (url === '/refresh') {
-    return refreshHandler(req, res)
-  }
+  if (url === '/refresh') return refreshHandler(req, res)
+
+  const { ext } = path.parse(url || '')
 
   if (ext) {
     try {
-      const contentType = mimeType[ext]
+      const isSupportedMimeType = Object.keys(mimeType).includes(ext)
+      const contentType = mimeType[ext as keyof typeof mimeType]
 
-      if (!contentType) return res.end()
+      if (!isSupportedMimeType || !contentType) return res.end()
 
       return res
-        .setHeader('Content-Type', mimeType[ext])
+        .setHeader('Content-Type', mimeType[ext as keyof typeof mimeType])
         .end(await fsp.readFile(path.join('public', url)))
     } catch (error) {
       res.statusCode = 404
@@ -45,16 +44,17 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
         encoding: 'utf-8',
       })
 
-      return res
-        .setHeader('Content-Type', 'text/html')
-        .end(layout(marked.parse(buffer.toString()), process.env.NODE_ENV === 'dev'), 'utf-8')
+      return res.setHeader('Content-Type', 'text/html').end(
+        layout({
+          content: await marked.parse(buffer.toString()),
+          devMode: process.env.NODE_ENV === 'dev',
+        }),
+        'utf-8'
+      )
     } catch (error) {
       return res.end('404')
     }
   }
 }
 
-// console.log('hehe!!')
-const server = http.createServer(handler)
-
-server.listen(3000, () => console.log('http://localhost:3000'))
+http.createServer(handler).listen(3013, () => console.log('http://localhost:3013'))

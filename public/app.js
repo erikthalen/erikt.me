@@ -1,22 +1,29 @@
+import { createNoise3D } from 'simplex-noise'
 import { parse } from './parse.js'
+
+const noise3D = createNoise3D()
 
 const container = document.querySelector('main')
 const content = container.innerHTML
 const { body } = new DOMParser().parseFromString(content, 'text/html')
 
-const CHARS =
-  " .,-—–*:;'()/\\01abcdeéfghijklmnopqrstuvwxyz?&ABCDEFGHIJKLMNOPQRSTUVWXYZ23456789!|".split('')
+const CHARS = ".,-—–*:;'()/\\01abcdeéfghijklmnopqrstuvwxyz&ABCDEFGHIJKLMNOPQRSTUVWXYZ23456789!?| "
+  .split('')
+  .reverse()
 const CHAR_SIZE = { X: 9, Y: 18.75 }
+const ASPECT = CHAR_SIZE.X / CHAR_SIZE.Y
 
 const data = parse(body)
 
 /** @type number[][] */
-let intData = JSON.parse(JSON.stringify(data))
+let contentData = JSON.parse(JSON.stringify(data))
 
-for (const row of intData) {
-  for (let [i, col] of row.entries()) {
-    row[i] = CHARS.indexOf(col)
+for (const [i, row] of contentData.entries()) {
+  for (let [j, col] of row.entries()) {
+    row[j] = CHARS.indexOf(col)
   }
+
+  contentData[i] = row.filter((col) => col !== -1)
 }
 
 /**
@@ -28,7 +35,7 @@ for (const row of intData) {
 const cols = (fill) =>
   Array(Math.ceil(window.innerWidth / CHAR_SIZE.X))
     .fill(0)
-    .map(() => fill())
+    .map((_, x) => fill(x))
 
 /**
  * @function
@@ -39,9 +46,23 @@ const cols = (fill) =>
 const rows = (fill) =>
   Array(Math.ceil(window.innerHeight / CHAR_SIZE.Y))
     .fill(0)
-    .map(() => fill())
+    .map((_, y) => fill(y))
 
-const grid = rows(() => cols(() => '|'))
+const grid = rows((y) =>
+  cols((x) => {
+    const init = Math.floor(Math.max(0, noise3D(y / 10 / ASPECT, x / 10, 0)) * CHARS.length)
+
+    console.log(init * -1000)
+
+    return init * -1
+  })
+)
+const gridHTML = rows((y) =>
+  cols((x) => {
+    const init = Math.floor(Math.max(0, noise3D(y / 10 / ASPECT, x / 10, 0)) * CHARS.length)
+    return CHARS[init * -1000]
+  })
+)
 
 const outputEl = document.createElement('output')
 document.body.append(outputEl)
@@ -61,53 +82,112 @@ const posts = [
   [23, 11],
 ]
 
+/**
+ * @param {number} y
+ * @param {number} x
+ * @returns ("" | "\<b\>")
+ */
 const b0 = (y, x) => (pres.find((i) => i[0] === y && i[1] === x) ? '<b>' : '')
+
+/**
+ * @param {number} y
+ * @param {number} x
+ * @returns ("" | "\</b\>")
+ */
 const b1 = (y, x) => (posts.find((i) => i[0] === y && i[1] === x) ? '</b>' : '')
 
-// mouse
-let oldMouse = { x: undefined, y: undefined }
-let mouse = { x: undefined, y: undefined }
-let mouseCol = { x: undefined, y: undefined }
-let circleLerped = 0
-
-window.addEventListener('pointermove', (e) => {
-  mouse.x = e.clientX
-  mouse.y = e.clientY
-  mouseCol.x = Math.floor(e.clientX / CHAR_SIZE.X)
-  mouseCol.y = Math.floor(e.clientY / CHAR_SIZE.Y)
-})
-
-window.addEventListener('pointerleave', (e) => {
-  mouse.x = undefined
-  mouse.y = undefined
-  mouseCol.x = undefined
-  mouseCol.y = undefined
-})
-
-const update = () => {
-  let output = ''
-
-  for (let i = 0; i < grid.length; i++) {
-    for (let j = 0; j < grid[i].length; j++) {
-      const c = intData[i - 1]?.[j - 2]
-
-      const circle = Math.hypot(mouseCol.x - j, (mouseCol.y - i) / (CHAR_SIZE.X / CHAR_SIZE.Y))
-
-      let output = ' '
-      const clean = grid[i][j].replace('<b>', '').replace('</b>', '')
-
-      if (circle < circleLerped) {
-        output = '|'
-      } else if (typeof c === 'number' && c !== -1 && clean === CHARS[c]) {
-        output = CHARS[c]
-      } else {
-        output = CHARS[Math.max(0, CHARS.indexOf(clean) - 1)]
-      }
-
-      grid[i][j] = b0(i, j) + output + b1(i, j)
+const initMouse = () => ({
+  current: { x: undefined, y: undefined },
+  last: { x: undefined, y: undefined },
+  grid: { x: undefined, y: undefined },
+  size: 0,
+  sizeLerped: 0,
+  setPosition(x, y) {
+    this.current.x = x
+    this.current.y = y
+    this.grid.x = Math.floor(x / CHAR_SIZE.X)
+    this.grid.y = Math.floor(y / CHAR_SIZE.Y)
+  },
+  updateSize() {
+    if (!this.last.x) {
+      this.size = 0
+    } else {
+      this.size = Math.hypot(this.current.x - this.last.x, this.current.y - this.last.y) ** 0.9
+      this.sizeLerped = lerp(this.sizeLerped || 0, this.size, 0.1)
     }
 
-    output = output.concat(...grid[i], '\n')
+    this.last.x = this.current.x
+    this.last.y = this.current.y
+  },
+  reset() {
+    this.current = { x: undefined, y: undefined }
+    this.last = { x: undefined, y: undefined }
+    this.grid = { x: undefined, y: undefined }
+    this.size = 0
+    this.sizeLerped = 0
+  },
+})
+
+let mouse = initMouse()
+
+window.addEventListener('pointermove', (e) => {
+  mouse.setPosition(e.clientX, e.clientY)
+})
+
+document.documentElement.addEventListener('mouseleave', () => {
+  mouse.reset()
+})
+
+const mod = (n, by) => ((n % by) + by) % by
+const isOdd = (x, y) => {
+  const oddY = y % 2 === 0
+  return x % 2 === (oddY ? 0 : 1)
+}
+
+let frame = 0
+
+const update = () => {
+  frame++
+
+  let output = ''
+
+  for (let row = 0; row < grid.length; row++) {
+    for (let col = 0; col < grid[row].length; col++) {
+      const c = contentData[row - 1]?.[col - 2]
+
+      const mousePos = Math.hypot(mouse.grid.x - col, (mouse.grid.y - row) / ASPECT) + 1
+
+      const current = grid[row][col]
+
+      let res = 0
+
+      if (current < 0) {
+        res = current + 1
+      } else if (isOdd(col, row) && mousePos < mouse.sizeLerped) {
+        // is under mouse
+        res = CHARS.indexOf('0')
+      } else if (typeof c === 'number') {
+        // is content
+        const noise = noise3D(row / 5 / ASPECT, col / 5, frame / 500)
+
+        if (noise > 0.9) {
+          res = CHARS.indexOf('?')
+        } else {
+          res = current === c ? c : mod(current + 1, CHARS.length)
+        }
+      } else {
+        res = current === 0 ? 0 : mod(current + 1, CHARS.length)
+      }
+
+      // if (row === 10 && col === 95) {
+      //   console.log(res)
+      // }
+
+      grid[row][col] = res
+      gridHTML[row][col] = b0(row, col) + CHARS[Math.max(0, res)] + b1(row, col)
+    }
+
+    output = output.concat(...gridHTML[row], '\n')
   }
 
   outputEl.innerHTML = output
@@ -120,16 +200,11 @@ function lerp(start, end, amt = 0.2) {
 const tick = () => {
   requestAnimationFrame(tick)
 
-  const circleSize = Math.hypot(mouse.x - oldMouse.x, mouse.y - oldMouse.y)
-
-  circleLerped = lerp(circleLerped, circleSize, 0.1)
+  mouse.updateSize()
 
   update()
-
-  oldMouse.x = mouse.x || 0
-  oldMouse.y = mouse.y || 0
 }
 
 tick()
 
-// console.log(output, intData)
+// console.log(output, contentData)

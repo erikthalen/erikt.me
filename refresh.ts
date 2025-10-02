@@ -41,14 +41,14 @@ const html = String.raw
 export const refreshClient = html`<script>
   function reload() {
     const retry = async () => {
-      if (await fetch('http://localhost:3000').catch(() => false)) window.location.reload()
+      if (await fetch('http://localhost:3013').catch(() => false)) window.location.reload()
       else requestAnimationFrame(retry)
     }
 
     retry()
   }
 
-  const eventSource = new EventSource('http://localhost:3000/refresh')
+  const eventSource = new EventSource('http://localhost:3013/refresh')
 
   eventSource.onmessage = (e) => e.data !== 'open' && reload()
   eventSource.onerror = () => reload()

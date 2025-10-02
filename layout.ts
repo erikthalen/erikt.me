@@ -2,7 +2,13 @@ import { refreshClient } from './refresh.ts'
 
 const html = String.raw
 
-export default (content, refresher) => html`<!DOCTYPE html>
+export default ({
+  content,
+  devMode = false,
+}: {
+  content: string
+  devMode?: boolean
+}) => html`<!DOCTYPE html>
   <html lang="en">
     <head>
       <meta charset="UTF-8" />
@@ -10,10 +16,18 @@ export default (content, refresher) => html`<!DOCTYPE html>
       <title>erik thalén</title>
       <link rel="icon" type="image/png" href="favicon.png" />
 
+      <script type="importmap">
+        {
+          "imports": {
+            "simplex-noise": "https://esm.sh/simplex-noise"
+          }
+        }
+      </script>
+
       <link href="main.css" rel="stylesheet" />
       <script src="app.js" type="module"></script>
 
-      ${refresher ? refreshClient : ''}
+      ${devMode ? refreshClient : ''}
     </head>
 
     <body>
