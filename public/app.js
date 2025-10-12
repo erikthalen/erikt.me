@@ -158,7 +158,8 @@ const update = () => {
 
       if (current < 0) {
         res = current + 1
-      } else if (isOdd(col, row) && mousePos < mouse.sizeLerped) {
+      // } else if (isOdd(col, row) && mousePos < mouse.sizeLerped) {
+      } else if (mousePos < mouse.sizeLerped) {
         // is under mouse
         res = CHARS.indexOf('0')
       } else if (typeof c === 'number') {
@@ -168,14 +169,14 @@ const update = () => {
         if (noise > 0.9) {
           res = CHARS.indexOf('?')
         } else {
-          res = current === c ? c : mod(current + 1, CHARS.length)
+          res = current === c + CHARS.length ? c + CHARS.length : mod(current + 1, CHARS.length * 2)
         }
       } else {
         res = current === 0 ? 0 : mod(current + 1, CHARS.length)
       }
 
       grid[row][col] = res
-      gridHTML[row][col] = b0(row, col) + CHARS[Math.max(0, res)] + b1(row, col)
+      gridHTML[row][col] = b0(row, col) + CHARS[Math.max(0, mod(res, CHARS.length))] + b1(row, col)
     }
 
     output = output.concat(...gridHTML[row], '\n')

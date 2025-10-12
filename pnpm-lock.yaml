@@ -14,6 +14,9 @@ importers:
       front-matter:
         specifier: ^4.0.2
         version: 4.0.2
+      html-to-image:
+        specifier: ^1.11.13
+        version: 1.11.13
       marked:
         specifier: ^16.3.0
         version: 16.3.0
@@ -36,6 +39,9 @@ packages:
 
   front-matter@4.0.2:
     resolution: {integrity: sha512-I8ZuJ/qG92NWX8i5x1Y8qyj3vizhXS31OxjKDu3LKP+7/qBgfIKValiZIEwoVoJKUHlhWtYrktkxV1XsX+pPlg==}
+
+  html-to-image@1.11.13:
+    resolution: {integrity: sha512-cuOPoI7WApyhBElTTb9oqsawRvZ0rHhaHwghRLlTuffoD1B2aDemlCruLeZrUIIdvG7gs9xeELEPm6PhuASqrg==}
 
   js-yaml@3.14.1:
     resolution: {integrity: sha512-okMH7OXXJ7YrN9Ok3/SXrnu4iX9yOk+25nqX4imS2npuvTYDmo/QEZoqwZkYaIDk3jVvBOTOIEgEhaLOynBS9g==}
@@ -71,6 +77,8 @@ snapshots:
   front-matter@4.0.2:
     dependencies:
       js-yaml: 3.14.1
+
+  html-to-image@1.11.13: {}
 
   js-yaml@3.14.1:
     dependencies:

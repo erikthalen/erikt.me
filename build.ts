@@ -1,8 +1,8 @@
 import fsp from 'node:fs/promises'
 import path from 'node:path'
-import { marked } from 'marked'
-import layout from './layout.ts'
 import fm from 'front-matter'
+import { marked } from './marked.ts'
+import { defaultLayout } from './layouts/index.ts'
 import seo from './seo.ts'
 
 // clear out old built files
@@ -22,7 +22,7 @@ for (const page of pages) {
     // @ts-ignore
     const content = fm(buffer.toString())
 
-    const output = layout({
+    const output = defaultLayout({
       metatags: seo(content.attributes),
       content: await marked.parse(content.body),
       devMode: false,

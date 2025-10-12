@@ -1,4 +1,6 @@
 ---
+layout: default
+
 title: erik thalén
 description: frontend developer.
 image: favicon.png
@@ -13,7 +15,6 @@ application-name: erikt.me
 short-link: https://erikt.me
 keywords: portfolio, frontend, developer
 
-primary-color: '#333333'
 background-color: '#ffffff'
 ---
 

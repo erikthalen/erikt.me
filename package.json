@@ -7,6 +7,7 @@
   "dependencies": {
     "@types/node": "^24.6.0",
     "front-matter": "^4.0.2",
+    "html-to-image": "^1.11.13",
     "marked": "^16.3.0",
     "metatags-generator": "^1.1.8"
   },

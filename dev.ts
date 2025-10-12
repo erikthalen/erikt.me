@@ -1,11 +1,11 @@
 import http, { type ServerResponse, type IncomingMessage } from 'node:http'
 import fsp from 'node:fs/promises'
 import path from 'node:path'
-import { marked } from 'marked'
-import layout from './layout.ts'
+import * as layouts from './layouts/index.ts'
 import { refreshHandler } from './refresh.ts'
 import fm from 'front-matter'
 import seo from './seo.ts'
+import { marked } from './marked.ts'
 
 const mimeType = {
   '.html': 'text/html',
@@ -48,6 +48,9 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
 
       // @ts-ignore
       const content = fm(buffer.toString())
+
+      const layout =
+        content.attributes.layout === 'default' ? layouts.defaultLayout : layouts.cleanLayout
 
       return res.setHeader('Content-Type', 'text/html').end(
         layout({

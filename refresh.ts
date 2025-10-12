@@ -38,7 +38,7 @@ process.on('SIGTERM', () => process.exit(128 + 15))
 
 const html = String.raw
 
-export const refreshClient = html`<script>
+export const refreshClient = html`<script defer>
   function reload() {
     const retry = async () => {
       if (await fetch('http://localhost:3013').catch(() => false)) window.location.reload()
