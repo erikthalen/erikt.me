@@ -24,7 +24,7 @@ Studied at [Hyper Island](https://hyperisland.com) and is now doing [code and de
 
 Front-end developer specialized in interaction design, making well crafted websites.
 
-Loves to combine digital and physical, interactive installations, procedural art and electronic music.
+Likes to combine digital and physical, interactive installations, procedural art and electronic music.
 
 At one point in life I will fill a room with smoke and lasers.
 
