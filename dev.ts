@@ -16,9 +16,10 @@ const mimeType = {
 }
 
 async function handler(req: IncomingMessage, res: ServerResponse) {
-  const url = req.url
+  if (!req.url) return res.end()
 
-  if (!url) return res.end()
+  // only the path decides what to serve, query params are for the client
+  const url = new URL(req.url, 'http://localhost').pathname
 
   if (url === '/refresh') return refreshHandler(req, res)
 

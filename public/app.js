@@ -1,186 +1,199 @@
 import { createNoise3D, createNoise2D } from 'simplex-noise'
-import { parse } from './parse.js'
+import { parse, layout } from './parse.js'
 import mouse from './mouse.js'
+import debug from './debug.js'
+import { ASPECT, pxToGrid, gridToPx } from './grid.js'
 
-const noise3D = createNoise3D()
-
-const container = document.querySelector('main')
-const content = container.innerHTML
-const { body } = new DOMParser().parseFromString(content, 'text/html')
+debug.label = 'new'
 
 const CHARS =
   ".,-—–*:;'()/\\abcdeéfghijklmnopqrstuvwxyz&ABCDEFGHIJKLMNOPQRSTUVWXYZ23456789!?|10\\/)(';:*–—-,. "
     .split('')
     .reverse()
 
-const CHAR_SIZE = { X: 9, Y: 18.75 }
-const ASPECT = CHAR_SIZE.X / CHAR_SIZE.Y
+// cell value (-CHARS.length .. CHARS.length * 2 - 1) -> char code of the character it shows, offset by CHARS.length.
+// negative values show a space
+const CODES = Uint16Array.from({ length: CHARS.length * 3 }, (_, i) =>
+  (i < CHARS.length ? ' ' : CHARS[i % CHARS.length]).charCodeAt(0),
+)
 
-const data = parse(body)
+// the text of the page as lines, word wrapped like the (invisible) text in <main>,
+// and where in the grid its first character goes
+const lines = layout(parse(document.querySelector('main')), 36)
+const ORIGIN = { row: 1, col: 2 }
 
-/** @type number[][] */
-let contentData = JSON.parse(JSON.stringify(data))
-
-for (const [i, row] of contentData.entries()) {
-  for (let [j, col] of row.entries()) {
-    row[j] = CHARS.indexOf(col)
-  }
-
-  contentData[i] = row.filter((col) => col !== -1)
-}
-
-/**
- * @function
- * @template C
- * @param {() => C} fill
- * @returns {Array<C>}
- */
-const cols = (fill) =>
-  Array(Math.ceil(window.innerWidth / CHAR_SIZE.X))
-    .fill(0)
-    .map((_, x) => fill(x))
-
-/**
- * @function
- * @template R
- * @param {() => R} fill
- * @returns {Array<R>}
- */
-const rows = (fill) =>
-  Array(Math.ceil(window.innerHeight / CHAR_SIZE.Y))
-    .fill(0)
-    .map((_, y) => fill(y))
-
-const initSize = 4
+const noise3D = createNoise3D()
 const initNoise2D = createNoise2D()
-
-let grid = rows((y) =>
-  cols((x) => {
-    const value = (initNoise2D(y / initSize / ASPECT, x / initSize) + 1) * 0.5
-    const init = Math.floor(value * CHARS.length)
-    return init * -1
-  })
-)
-
-let gridHTML = rows((y) =>
-  cols((x) => {
-    const value = (initNoise2D(y / initSize / ASPECT, x / initSize) + 1) * 0.5
-    const init = Math.floor(value * CHARS.length)
-    return CHARS[init * -1]
-  })
-)
-
-function resizeGrid() {
-  const newGrid = rows(() => cols(() => 0))
-  const newGridHTML = rows(() => cols(() => ' '))
-
-  for (const [i, row] of newGrid.entries()) {
-    for (let [j] of row.entries()) {
-      row[j] = grid[i]?.[j] || row[j]
-      newGridHTML[i][j] = gridHTML[i]?.[j] || newGridHTML[i][j]
-    }
-  }
-
-  grid = newGrid
-  gridHTML = newGridHTML
-}
+const initSize = 40
 
 const outputEl = document.createElement('output')
 document.body.append(outputEl)
 
-const linkStarts = [
-  [3, 13],
-  [4, 8],
-  [20, 2],
-  [22, 2],
-]
+// the grid, as flat arrays where index = row * colCount + col
+let colCount = 0
+let rowCount = 0
+let grid = new Int16Array(0) // cell values
+let chars = new Uint16Array(0) // char code each cell shows
+let contentAt = new Int16Array(0) // char the cell should end up as, -1 = none, + CHARS.length = debug ui
+let rowIdle = new Uint8Array(0) // 1 = the row is blank and can be skipped
+/** @type {{ node: Text, start: number, end: number }[][]} the text nodes of each row */
+let rowSegments = []
 
-const linkEnds = [
-  [3, 24],
-  [4, 22],
-  [20, 7],
-  [22, 11],
-]
+const renderRow = (row) => {
+  for (const { node, start, end } of rowSegments[row]) {
+    node.data = String.fromCharCode.apply(null, chars.subarray(start, end))
+  }
+}
 
-/**
- * @param {number} y
- * @param {number} x
- * @returns ("" | "\<b\>")
- */
-const b0 = (y, x) => (linkStarts.find((i) => i[0] === y && i[1] === x) ? '<b>' : '')
+// makes `text` the content of the cells starting at row, col
+const stamp = (text, row, col, shift = 0) => {
+  if (row >= rowCount) return
 
-/**
- * @param {number} y
- * @param {number} x
- * @returns ("" | "\</b\>")
- */
-const b1 = (y, x) => (linkEnds.find((i) => i[0] === y && i[1] === x) ? '</b>' : '')
+  for (let i = 0; i < text.length && col + i < colCount; i++) {
+    // characters that can't be shown become spaces
+    contentAt[row * colCount + col + i] = Math.max(0, CHARS.indexOf(text[i])) + shift
+  }
 
-window.addEventListener('pointermove', (e) => {
-  mouse.setPosition(e.clientX, e.clientY)
-})
+  rowIdle[row] = 0
+}
 
-document.documentElement.addEventListener('mouseleave', mouse.reset)
+function resizeGrid() {
+  const viewport = pxToGrid(window.innerWidth, window.innerHeight)
+  const cols = Math.ceil(viewport.x)
+  const rows = Math.ceil(viewport.y)
+
+  // keep the state of the cells that are still visible, new cells start blank
+  const kept = new Int16Array(cols * rows)
+
+  for (let row = 0; row < Math.min(rows, rowCount); row++) {
+    kept.set(grid.subarray(row * colCount, row * colCount + Math.min(cols, colCount)), row * cols)
+  }
+
+  colCount = cols
+  rowCount = rows
+  grid = kept
+  chars = Uint16Array.from(grid, (value) => CODES[value + CHARS.length])
+  contentAt = new Int16Array(grid.length).fill(-1)
+  rowIdle = new Uint8Array(rowCount)
+  rowSegments = []
+
+  lines.forEach((line, i) => stamp(line.text, ORIGIN.row + i, ORIGIN.col))
+
+  // one <div> per row, with one text node per run of plain or link characters,
+  // so a frame only has to touch the text of the rows that changed
+  const rowEls = Array.from({ length: rowCount }, (_, row) => {
+    const rowEl = document.createElement('div')
+    const links = lines[row - ORIGIN.row]?.links ?? []
+
+    // the columns where a run starts and ends, every other run is a link
+    const cuts = [
+      0,
+      ...links.flatMap((link) => [ORIGIN.col + link.start, ORIGIN.col + link.end]),
+      colCount,
+    ].map((col) => row * colCount + Math.min(col, colCount))
+
+    rowSegments[row] = []
+
+    for (let i = 0; i < cuts.length - 1; i++) {
+      if (cuts[i] === cuts[i + 1]) continue
+
+      const node = document.createTextNode('')
+      const parent = i % 2 ? rowEl.appendChild(document.createElement('b')) : rowEl
+
+      parent.append(node)
+      rowSegments[row].push({ node, start: cuts[i], end: cuts[i + 1] })
+    }
+
+    renderRow(row)
+
+    return rowEl
+  })
+
+  outputEl.replaceChildren(...rowEls)
+}
+
+resizeGrid()
+
+// intro: cells start below zero and count up to blank
+for (let i = 0; i < grid.length; i++) {
+  const row = Math.floor(i / colCount)
+  const col = i % colCount
+  const value = (initNoise2D(row / initSize / ASPECT, col / initSize) + 1) * 0.5
+
+  grid[i] = -Math.floor(value * CHARS.length)
+}
+
+window.addEventListener('pointermove', (e) => mouse.setPosition(e.clientX, e.clientY))
 window.addEventListener('resize', resizeGrid)
-
-const mod = (n, by) => ((n % by) + by) % by
-const isOdd = (x, y) => x % 2 === (y % 2 === 0 ? 0 : 1)
+document.documentElement.addEventListener('mouseleave', () => mouse.reset())
 
 let frame = 0
-
-export const isInsideTriangle = (s, a, b, c) => {
-  let as_x = s[0] - a[0]
-  let as_y = s[1] - a[1]
-
-  let s_ab = (b[0] - a[0]) * as_y - (b[1] - a[1]) * as_x > 0
-
-  if ((c[0] - a[0]) * as_y - (c[1] - a[1]) * as_x > 0 == s_ab) return false
-  if ((c[0] - b[0]) * (s[1] - b[1]) - (c[1] - b[1]) * (s[0] - b[0]) > 0 != s_ab) return false
-  return true
-}
 
 const update = () => {
   frame++
 
-  let output = ''
+  // the mouse is a circle in px, with a radius of this many columns
+  const radius = gridToPx(Math.max(0, mouse.sizeLerped - 1)).x
 
-  for (let row = 0; row < grid.length; row++) {
-    for (let col = 0; col < grid[row].length; col++) {
-      const c = contentData[row - 1]?.[col - 2]
+  for (let row = 0; row < rowCount; row++) {
+    // the columns of the row that are inside that circle: as far to each side of the mouse
+    // as the circle is wide at this row. not a number if the circle doesn't reach the row,
+    // which makes the comparisons below false
+    const dy = gridToPx(0, mouse.grid.y - row).y
+    const reach = pxToGrid(Math.sqrt(radius * radius - dy * dy)).x
+    const mouseFrom = Math.floor(mouse.grid.x - reach) + 1
+    const mouseTo = Math.ceil(mouse.grid.x + reach) - 1
 
-      const mousePos = Math.hypot(mouse.grid.x - col, (mouse.grid.y - row) / ASPECT) + 1
+    // nothing can change in a blank row that the mouse isn't touching
+    if (rowIdle[row] && !(mouseFrom <= mouseTo)) continue
 
-      const current = grid[row][col]
+    let dirty = false
+    let live = 0
 
-      let res = 0
+    for (let col = 0; col < colCount; col++) {
+      const i = row * colCount + col
+      const current = grid[i]
+      const c = contentAt[i]
+
+      let res
 
       if (current < 0) {
         res = current + 1
-      // } else if (isOdd(col, row) && mousePos < mouse.sizeLerped) {
-      } else if (mousePos < mouse.sizeLerped) {
-        // is under mouse
+      } else if (col >= mouseFrom && col <= mouseTo) {
         res = CHARS.indexOf('0')
-      } else if (typeof c === 'number') {
-        // is content
-        const noise = noise3D(row / 5 / ASPECT, col / 5, frame / 500)
-
-        if (noise > 0.9) {
-          res = CHARS.indexOf('?')
-        } else {
-          res = current === c + CHARS.length ? c + CHARS.length : mod(current + 1, CHARS.length * 2)
-        }
+      } else if (c >= CHARS.length) {
+        // debug ui, shown as is
+        res = c - CHARS.length
+      } else if (c < 0) {
+        // no content, cycle until blank
+        res = current === 0 ? 0 : (current + 1) % CHARS.length
+      } else if (noise3D(row / 5 / ASPECT, col / 5, frame / 500) > 0.9) {
+        res = CHARS.indexOf('?')
       } else {
-        res = current === 0 ? 0 : mod(current + 1, CHARS.length)
+        // content, cycle until its character
+        res = current === c + CHARS.length ? current : (current + 1) % (CHARS.length * 2)
       }
 
-      grid[row][col] = res
-      gridHTML[row][col] = b0(row, col) + CHARS[Math.max(0, mod(res, CHARS.length))] + b1(row, col)
+      live |= res
+
+      if (res !== current) {
+        grid[i] = res
+
+        // only redraw the row if a visible character changed
+        if (chars[i] !== CODES[res + CHARS.length]) {
+          chars[i] = CODES[res + CHARS.length]
+          dirty = true
+        }
+      }
     }
 
-    output = output.concat(...gridHTML[row], '\n')
-  }
+    rowIdle[row] = live === 0 ? 1 : 0
 
-  outputEl.innerHTML = output
+    if (dirty) {
+      renderRow(row)
+      debug.rowsDrawn++
+    }
+  }
 }
 
 const tick = () => {
@@ -188,7 +201,15 @@ const tick = () => {
 
   mouse.updateSize()
 
-  update()
+  if (debug.enabled) {
+    // the debug ui is content that is shown as is, instead of being cycled towards
+    const ui = debug.layout(rowCount)
+    ui.lines.forEach((line, i) => stamp(line, ui.top + i, ORIGIN.col, CHARS.length))
+
+    debug.measure(update)
+  } else {
+    update()
+  }
 }
 
 tick()

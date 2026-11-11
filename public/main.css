@@ -11,8 +11,10 @@
 }
 
 :root {
-  --color: rgba(255, 255, 255, 0.87);
-  --background-color: #242424;
+  color-scheme: light dark;
+
+  --color: light-dark(#213547, rgba(255, 255, 255, 0.87));
+  --background-color: light-dark(#ffffff, #242424);
 
   color: var(--color);
   background-color: var(--background-color);
@@ -22,19 +24,10 @@
   line-height: 1.25;
   font-weight: 400;
 
-  color-scheme: light dark;
-
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    --color: #213547;
-    --background-color: #ffffff;
-  }
 }
 
 * {
@@ -47,25 +40,30 @@
 body {
   touch-action: none;
   min-height: 100dvh;
+
+  main {
+    position: relative;
+    z-index: 1;
+
+    padding: 1lh 2ch;
+    max-width: 40ch;
+
+    color: transparent;
+  }
+
+  output {
+    position: fixed;
+    top: 0;
+    left: 0;
+    white-space: pre;
+    pointer-events: none;
+    user-select: none;
+  }
 }
 
-main {
-  position: relative;
-  z-index: 1;
-
-  padding: 1lh 2ch;
-  max-width: 40ch;
-
-  color: transparent;
-}
-
-output {
-  position: fixed;
-  top: 0;
-  left: 0;
-  white-space: pre;
-  pointer-events: none;
-  user-select: none;
+/* one per row of the grid, a changed row only re-lays out itself */
+output div {
+  contain: layout style;
 }
 
 p {

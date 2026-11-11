@@ -1,4 +1,4 @@
-const CHAR_SIZE = { X: 9, Y: 18.75 }
+import { pxToGrid } from './grid.js'
 
 const lerp = (start, end, amt = 0.2) => (1 - amt) * start + amt * end
 
@@ -16,8 +16,11 @@ const initMouse = () => ({
   setPosition(x, y) {
     this.current.x = x
     this.current.y = y
-    this.grid.x = Math.floor(x / CHAR_SIZE.X)
-    this.grid.y = Math.floor(y / CHAR_SIZE.Y)
+
+    const cell = pxToGrid(x, y)
+
+    this.grid.x = Math.floor(cell.x)
+    this.grid.y = Math.floor(cell.y)
   },
   /**
    * Updated the size and lerped size of the cursor. Call this on each rAF

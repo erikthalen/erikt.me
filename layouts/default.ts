@@ -35,7 +35,12 @@ export default ({
       </script>
 
       <link href="main.css" rel="stylesheet" />
-      <script src="app.js" type="module"></script>
+      ${devMode
+        ? html`<script type="module">
+            // ?old runs the previous implementation, to compare timings (with ?debug)
+            import(new URLSearchParams(location.search).has('old') ? './app-old.js' : './app.js')
+          </script>`
+        : html`<script src="app.js" type="module"></script>`}
       <!-- <script src="generate-image.js" type="module"></script> -->
 
       ${devMode ? refreshClient : ''}
