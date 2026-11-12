@@ -29,23 +29,23 @@ const initSize = 40
 const outputEl = document.createElement('output')
 document.body.append(outputEl)
 
-// the trail of the mouse is colored with the CSS Custom Highlight API: one highlight per hue,
-// holding the ranges of text that currently have that hue, a new one each frame.
-// the trail of the mouse goes from red (under the mouse) to magenta and stays there,
-// so that old parts of it don't look new again. the random "?" loop through all of the hues
+// the random "?" in the text are colored with the CSS Custom Highlight API: one highlight per hue,
+// holding the ranges of text that currently have that hue. a "?" starts out red,
+// and moves on to the next hue each frame, looping through all of them.
+// disabled since it makes safari lag, add ?rainbow to the url to enable it
+const RAINBOW = new URLSearchParams(location.search).has('rainbow') && !!CSS.highlights
 const HUES = 90
-const TRAIL_HUES = HUES * (300 / 360)
-const trailSheet = new CSSStyleSheet()
-const highlights = Array.from({ length: CSS.highlights ? HUES : 0 }, (_, i) => {
+const rainbowSheet = new CSSStyleSheet()
+const highlights = Array.from({ length: RAINBOW ? HUES : 0 }, (_, i) => {
   const highlight = new Highlight()
 
-  CSS.highlights.set(`trail-${i}`, highlight)
-  trailSheet.insertRule(`::highlight(trail-${i}) { color: hsl(${(i / HUES) * 360} 100% 50%) }`)
+  CSS.highlights.set(`rainbow-${i}`, highlight)
+  rainbowSheet.insertRule(`::highlight(rainbow-${i}) { color: hsl(${(i / HUES) * 360} 100% 50%) }`)
 
   return highlight
 })
 
-document.adoptedStyleSheets.push(trailSheet)
+document.adoptedStyleSheets.push(rainbowSheet)
 
 // the grid, as flat arrays where index = row * colCount + col
 let colCount = 0
@@ -53,11 +53,9 @@ let rowCount = 0
 let grid = new Int16Array(0) // cell values
 let chars = new Uint16Array(0) // char code each cell shows
 let contentAt = new Int16Array(0) // char the cell should end up as, -1 = none, + CHARS.length = debug ui
-// the frame a cell got its color, 0 = it has none. positive = the mouse was over it,
-// negative = it turned into a random "?"
-let bornAt = new Int32Array(0)
+let bornAt = new Int32Array(0) // the frame the cell turned into a random "?", 0 = it has no color
 let rowIdle = new Uint8Array(0) // 1 = the row is blank and can be skipped
-let hadTrail = false
+let hadRainbow = false
 /** @type {{ node: Text, start: number, end: number }[][]} the text nodes of each row */
 let rowSegments = []
 
@@ -75,10 +73,8 @@ const boundary = (row, i, isEnd = false) => {
 }
 
 // puts each run of cells with the same age in the highlight of that age
-const paintTrail = () => {
-  for (const highlight of highlights) highlight.clear()
-
-  if (!highlights.length) return
+const paintRainbow = () => {
+  for (const highlight of highlights) if (highlight.size) highlight.clear()
 
   for (let row = 0; row < rowCount; row++) {
     for (let from = row * colCount, to, last = from + colCount; from < last; from = to) {
@@ -93,7 +89,7 @@ const paintTrail = () => {
       const [endContainer, endOffset] = boundary(row, to, true)
 
       // static, since writing to a text node collapses the live ranges inside of it
-      const hue = born > 0 ? Math.min(frame - born, TRAIL_HUES) : (frame + born) % HUES
+      const hue = (frame - born) % HUES
 
       highlights[hue].add(
         new StaticRange({ startContainer, startOffset, endContainer, endOffset }),
@@ -132,7 +128,7 @@ function resizeGrid() {
   chars = Uint16Array.from(grid, (value) => CODES[value + CHARS.length])
   contentAt = new Int16Array(grid.length).fill(-1)
   bornAt = new Int32Array(grid.length)
-  hadTrail = true
+  hadRainbow = true
   rowIdle = new Uint8Array(rowCount)
   rowSegments = []
 
@@ -194,7 +190,7 @@ const update = () => {
   // the mouse is a circle in px, with a radius of this many columns
   const radius = gridToPx(Math.max(0, mouse.sizeLerped - 1)).x
 
-  let hasTrail = false
+  let hasRainbow = false
 
   for (let row = 0; row < rowCount; row++) {
     // the columns of the row that are inside that circle: as far to each side of the mouse
@@ -240,15 +236,19 @@ const update = () => {
 
       // cells get a color when the mouse is over them, or when they turn into a random "?",
       // and keep it until they stop changing
-      let born = bornAt[i]
+      live |= res
 
-      if (underMouse) born = frame
-      else if (isRandom) born = born < 0 ? born : -frame
-      else if (res === current) born = 0
+      if (RAINBOW) {
+        let born = bornAt[i]
 
-      bornAt[i] = born
-      live |= res | born
-      hasTrail ||= born !== 0
+        // a "?" keeps its color until it is back to its character, or the mouse takes over
+        if (isRandom) born ||= frame
+        else if (underMouse || res === current) born = 0
+
+        bornAt[i] = born
+        live |= born
+        hasRainbow ||= born !== 0
+      }
 
       if (res !== current) {
         grid[i] = res
@@ -269,10 +269,10 @@ const update = () => {
     }
   }
 
-  // the colors follow the age of the cells, so they move every frame as long as there is a trail
-  if (hasTrail || hadTrail) paintTrail()
+  // the colors follow the age of the cells, so they move every frame as long as there are any
+  if (RAINBOW && (hasRainbow || hadRainbow)) paintRainbow()
 
-  hadTrail = hasTrail
+  hadRainbow = hasRainbow
 }
 
 const tick = () => {
