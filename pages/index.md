@@ -33,3 +33,5 @@ I'm also dreaming of owning a boat.
 [Github](https://github.com/erikthalen)
 
 - [yatzy.life](https://yatzy.life)
+- [loop](https://loop.erikt.me)
+- [ui](https://ui.erikt.me)
